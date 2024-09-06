@@ -1,0 +1,47 @@
+import cv2
+cam = cv2.VideoCapture(0)
+def avoid(img):
+    move = {'forward': False,'right':False,'left':False,'reverse':False}
+    for(x,y,w,h) in img:
+        if x <frame.shape[1]//3 and (x+w)<frame.shape[1]//2:
+            move['right']=True
+        elif x>(frame.shape[1]//2):
+            move['left']=True
+        elif (x+w)>frame.shape[1]//3:
+            move['reverse']=True
+        else:
+            move['forward']=True
+    if move['left']:
+        print("Turn Left")
+    if move['right']:
+        print("Turn Right")
+    if move['reverse']:
+        print("Reverse")
+    if move['forward']:
+        print("Move Forward")
+
+while True:
+    ret, frame = cam.read()
+    gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    ret1,thresh = cv2.threshold(gray,50,200,cv2.THRESH_TOZERO_INV)
+    erosion = cv2.erode(thresh,kernel=None,iterations=1)
+    dilate = cv2.dilate(erosion,kernel=None,iterations=2)
+    cnt,_ = cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    obstacles = []
+    for cnt in cnt:
+        x,y,w,h = cv2.boundingRect(cnt)
+        area=cv2.contourArea(cnt)
+        if area<5000 and (h/w)<3:
+            continue
+        if area > frame.shape[0] * frame.shape[1] * 0.6:
+            continue
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+        cv2.putText(frame,"Obstacle",(x,y),cv2.FONT_HERSHEY_SIMPLEX,1,(150,240,120),1,cv2.LINE_AA)
+        obstacles.append((x, y, w, h))
+    avoid(obstacles)
+    if cv2.waitKey(1)& 0XFF == ord('q'):
+        break
+    cv2.imshow('frame',frame)
+
+cam.release()
+cv2.destroyAllWindows()
